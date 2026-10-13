@@ -3,6 +3,8 @@ namespace Accounts;
 /// <summary>Dlaczego napis nie jest poprawnym polskim numerem rachunku.</summary>
 public enum NrbRejection
 {
+    /// <summary>Wartość domyślna: wynik, którego nikt nie policzył, nie może wyglądać jak numer poprawny.</summary>
+    NotValidated = 0,
     None,
     Empty,
     UnsupportedCountry,
@@ -30,7 +32,7 @@ public static class Nrb
         string text = AccountNumberText.Normalize(input);
         if (text.Length == 0) return NrbResult.Rejected(NrbRejection.Empty);
 
-        if (text.Length >= 2 && char.IsLetter(text[0]) && char.IsLetter(text[1]))
+        if (HasCountryPrefix(text))
         {
             if (!text.StartsWith("PL", StringComparison.Ordinal)) return NrbResult.Rejected(NrbRejection.UnsupportedCountry);
             text = text[2..];
@@ -42,6 +44,12 @@ public static class Nrb
 
         return new NrbResult(NrbRejection.None, text, text.Substring(2, 8));
     }
+
+    // Kod kraju to dokładnie dwie litery A–Z, po których idzie cyfra. „IBAN PL61…” albo „brak”
+    // nie mają kodu kraju — mają litery w numerze, i tak zostaną nazwane.
+    private static bool HasCountryPrefix(string text) =>
+        text.Length >= 2 && char.IsAsciiLetterUpper(text[0]) && char.IsAsciiLetterUpper(text[1]) &&
+        (text.Length == 2 || char.IsAsciiDigit(text[2]));
 
     private static int Mod97(string digits)
     {
