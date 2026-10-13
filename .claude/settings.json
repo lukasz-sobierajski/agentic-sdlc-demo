@@ -1,0 +1,19 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          { "type": "command", "command": "dotnet run --project \"$CLAUDE_PROJECT_DIR/tools/Gates\" -- hook-edit" }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          { "type": "command", "command": "dotnet run --project \"$CLAUDE_PROJECT_DIR/tools/Gates\" -- hook-stop" }
+        ]
+      }
+    ]
+  }
+}

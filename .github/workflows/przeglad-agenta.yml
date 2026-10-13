@@ -1,0 +1,32 @@
+name: przegląd agenta
+
+# Drugi agent czyta PR pierwszego według docs/reviewer-prompt.md i zostawia komentarz.
+# Człowiek zatwierdza PO nim. Zadanie rusza tylko tam, gdzie właściciel repozytorium ustawił
+# zmienną PRZEGLAD_AGENTA=wlaczony i sekret z kluczem do modelu — w tym demo jest wyłączone
+# (README, „Co tu jest uczciwie nie do końca”).
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  przeglad:
+    if: vars.PRZEGLAD_AGENTA == 'wlaczony' && startsWith(github.head_ref, 'agent/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            Jesteś recenzentem PR #${{ github.event.pull_request.number }} w repozytorium ${{ github.repository }}.
+            Wykonaj dokładnie instrukcję z pliku docs/reviewer-prompt.md.
+            Wynik opublikuj jednym komentarzem: gh pr comment ${{ github.event.pull_request.number }} --body-file <plik>.
+          claude_args: >-
+            --allowedTools "Read,Grep,Glob,Write,Bash(git diff:*),Bash(git log:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh pr comment:*)"

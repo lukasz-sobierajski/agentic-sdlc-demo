@@ -1,0 +1,43 @@
+name: bramki
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  bramki:
+    runs-on: ubuntu-latest
+    env:
+      # Nazwa gałęzi i opis PR są danymi z zewnątrz — trafiają do kroków przez zmienne,
+      # nigdy przez wklejenie do treści polecenia.
+      HEAD_REF: ${{ github.head_ref }}
+      BASE_REF: ${{ github.base_ref }}
+      PR_BODY: ${{ github.event.pull_request.body }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: B1 — kompilacja, ostrzeżenia są błędami
+        run: dotnet build -warnaserror -nologo
+
+      - name: B2 — testy
+        run: dotnet test --no-build -nologo
+
+      - name: B3 — każde kryterium zadania ma test
+        run: dotnet run --project tools/Gates --no-build -- tasks "$HEAD_REF"
+
+      - name: B4 — agent nie zmienia własnych bramek
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'agent/')
+        run: dotnet run --project tools/Gates --no-build -- paths "origin/$BASE_REF"
+
+      - name: B5 — opis PR
+        if: github.event_name == 'pull_request'
+        run: dotnet run --project tools/Gates --no-build -- pr
