@@ -79,4 +79,15 @@ public class NrbTests
     {
         Assert.AreEqual(expected, Nrb.Validate(input).Rejection);
     }
+
+    [TestMethod]
+    [TestProperty("kryterium", "0001-K5")]
+    public void Valid_number_exposes_eight_digit_bank_code_from_positions_3_to_10()
+    {
+        NrbResult result = Nrb.Validate("PL61 1090 1014 0000 0712 1981 2874");
+
+        Assert.IsTrue(result.IsValid);
+        Assert.AreEqual("10901014", result.BankCode);
+        Assert.AreEqual(result.Digits.Substring(2, 8), result.BankCode);
+    }
 }
